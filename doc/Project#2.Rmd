@@ -1,0 +1,88 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+library(lubridate)
+library(dplyr)
+library(leaflet)
+library(shiny)
+
+# read two datasets
+df1 <- read.csv("~/Desktop/Columbia/:2022 fall/5243 Applied Data Science/fall2022-project2-group10/data/NYPD_Arrest_Data__Year_to_Date_.csv")            # year to date data
+df2 <- read.csv("~/Desktop/Columbia/:2022 fall/5243 Applied Data Science/fall2022-project2-group10/data/NYPD_Arrests_Data__Historic_.csv")               # historical data
+
+colnames(df1)
+colnames(df2)
+```
+
+```{r}
+df1$date <- as.Date(df1$ARREST_DATE, "%m/%d/%Y")       # transform character into date format
+df2$date <- as.Date(df2$ARREST_DATE, "%m/%d/%Y")
+
+current.df <- df1 %>% 
+  select("ARREST_KEY", "ARREST_DATE",  "LAW_CAT_CD", "ARREST_BORO" , "JURISDICTION_CODE", "AGE_GROUP" ,
+         "PERP_SEX" , "PERP_RACE", "Latitude" , "Longitude", "date")      # select same variables from both datasets
+  
+DATE1 <- as.Date("2011-01-01")
+his.df <- df2[df2$date >= DATE1,] %>%                                     # filter arrest event happened after 2011-01-01
+  select("ARREST_KEY", "ARREST_DATE",  "LAW_CAT_CD", "ARREST_BORO" , "JURISDICTION_CODE", "AGE_GROUP" ,
+         "PERP_SEX" , "PERP_RACE", "Latitude" , "Longitude", "date")
+
+df <- rbind(current.df, his.df)
+```
+
+
+```{r}
+df$year <- format(as.Date(df$date, format="%d/%m/%Y"),"%Y")      # year
+
+df<- df %>%                                                      # gender
+  mutate(
+    gender = case_when(
+      PERP_SEX == 'M' ~ 'Male',
+      PERP_SEX == 'F' ~ 'Female'))
+
+head(df)
+```
+
+```{r}
+subset.2022 <- df[df$year == "2022",] 
+```
+
+```{r}
+subset.2022 %>% 
+    filter(gender %in% c("Male"), AGE_GROUP %in% c('45-64','65+')) %>% 
+    leaflet() %>% 
+      addTiles() %>% 
+      addCircleMarkers(lng = ~Longitude, lat = ~Latitude, clusterOptions = markerClusterOptions())
+```
+
+```{r}
+unique(df$AGE_GROUP)
+```
+
+```{r}
+ui <- shinyUI(fluidPage(
+  sidebarPanel(
+    checkboxGroupInput("gender", label = "Perpetrator’s gender",
+                choices = c('Male','Female'), selected = 'Male'),
+    checkboxGroupInput("age", label = "Perpetrator’s age group",
+                choices = c('<18','18-24','25-44', '45-64', '65+'), selected = '18-24')),
+
+  leafletOutput("mymap")
+))
+
+server <- shinyServer(function(input, output, session) {
+
+  output$mymap <- renderLeaflet({
+    subset.2022 %>% 
+    filter(gender %in% input$gender, AGE_GROUP %in% input$age) %>% 
+    leaflet() %>% 
+      addTiles() %>% 
+      addCircleMarkers(lng = ~Longitude, lat = ~Latitude, clusterOptions = markerClusterOptions())
+  })
+})
+
+shinyApp(ui, server)
+```
+
