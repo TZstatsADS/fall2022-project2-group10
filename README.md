@@ -20,13 +20,13 @@ The **learning goals** for this project is:
 Term: Fall 2022
 
 + Team # Group 10
-+ **Crime Data Shiny app**: + Team members
++ **Crime Data Shiny app**:
 	+ Cheng, Louis
 	+ Hu, Jianing
 	+ Li, Shuangxian
 	+ Wang, Yayuan
 	+ Wislicki, Tomasz
-
++shiny link:	
 + **Project summary**: Lorem 
 
 + **Contribution statement**: ([default](doc/a_note_on_contributions.md)) All team members contributed equally in all stages of this project. All team members approve our work presented in this GitHub repository including this contributions statement. 
