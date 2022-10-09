@@ -33,13 +33,13 @@ Term: Fall 2022
 
 + **Contribution statement**: 
 
-+ Yayuan and Shuangxian chose the dataset and the topic.
+Yayuan and Shuangxian chose the dataset and the topic.
 
-+ Shuangxian constructed the frame of the application page and designed the time series tab and pie chart tab.
+Shuangxian constructed the frame of the application page and designed the time series tab and pie chart tab.
 
-+ Yayuan created and wrote up the Home and Appendix page and designed the map. 
+Yayuan created and wrote up the Home and Appendix page and designed the map. 
 
-+ Shuangxian and Yayuan helped polish and improve the visualizations for each other. 
+Shuangxian and Yayuan helped polish and improve the visualizations for each other. 
 
 + **Data source**: NYC Open Data 
 https://data.cityofnewyork.us/Public-Safety/NYPD-Arrests-Data-Historic-/8h9b-rp9u/data
