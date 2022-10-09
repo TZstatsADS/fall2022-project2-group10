@@ -28,7 +28,7 @@ Term: Fall 2022
 
 +shiny link:
 
-+ **Project summary**: Utilizing the arrest data provided by NYPD, this application aims to provide insight into the public security and police enforcement activities in New York from January 2011 to June 2022. The application includes one map, a time series plot, and pie charts to further break down the arrest activities into the perpetrators? gender, age, race, and the location of the arrest event.
++ **Project summary**: Utilizing the arrest data provided by NYPD, this application aims to provide insight into the public security and police enforcement activities in New York from January 2011 to June 2022. The application includes one map, a time series plot, and pie charts to further break down the arrest activities into the perpetrators' gender, age, race, and the location of the arrest event.
 
 
 + **Contribution statement**: 
