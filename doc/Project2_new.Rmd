@@ -1,0 +1,409 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## Library Packages and Load Data
+
+```{r, warning=FALSE}
+library(lubridate)
+library(dplyr)
+library(leaflet)
+library(shiny)
+library(shinyWidgets)
+library(shinydashboard)
+library(plotly)
+
+# read two datasets
+
+# df1 <- read.csv("/Users/lsx/Desktop/new_app/NYPD_Arrest_Data__Year_to_Date_.csv")            # year to date data
+# df2 <- read.csv("/Users/lsx/Desktop/new_app/NYPD_Arrests_Data__Historic_.csv")               # historical data
+
+df1 <- read.csv('/Users/lsx/Desktop/new_app/NYPD_Arrest_Data__Year_to_Date_.csv')
+df2 <- read.csv("/Users/lsx/Desktop/new_app/NYPD_Arrests_Data__Historic_.csv")
+```
+
+## Combined Raw Datafile
+
+```{r}
+df <- df1[,1:18] |> 
+    rbind(df2[,1:18]) |> 
+    select(ARREST_DATE, OFNS_DESC, LAW_CAT_CD, ARREST_BORO, ARREST_PRECINCT, JURISDICTION_CODE,
+           AGE_GROUP, PERP_SEX, PERP_RACE, Latitude, Longitude) |> 
+    dplyr::filter(OFNS_DESC != '(null)' | !is.na(ARREST_BORO)) |> 
+    mutate(ARREST_DATE = as.Date(ARREST_DATE, "%m/%d/%Y"),
+           ARREST_YEAR = year(ARREST_DATE))
+df$PERP_RACE[df$PERP_RACE == "UNKNOWN"] <- "OTHER"
+
+# remove(df1, df2)
+```
+
+## Prepare data to summary
+
+PreDataTime: A New Database used in Time Serial plot
+
+PreDataPie: A New Database used in Pie plot
+
+```{r}
+PreDataTime <- df |> 
+    mutate(ARREST_MONTH = month(ARREST_DATE)) |> 
+    group_by(ARREST_YEAR, ARREST_MONTH, OFNS_DESC, ARREST_BORO) |> 
+    count() |> 
+    ungroup() |> 
+    dplyr::filter(ARREST_YEAR >= 2011) |> 
+    I()
+
+
+PreDataPie <- df |> 
+    group_by(ARREST_YEAR, OFNS_DESC, ARREST_BORO, PERP_SEX, PERP_RACE, AGE_GROUP) |> 
+    count() |> 
+    ungroup() |> 
+    dplyr::filter(ARREST_YEAR >= 2011) |> 
+    I()
+```
+
+## Value used in Shiny App UI
+
+```{r}
+SelectBoro <- unique(PreDataPie$ARREST_BORO)
+names(SelectBoro) <- c("Brooklyn", "Manhattan", "Queens", "Bronx", "StatenIsland")
+
+
+SelectSex <- c('Male' = 'M', 'Female' = "F")
+
+SelectRace <- c('White' = 'WHITE', 'White Hispanic' = 'WHITE HISPANIC',
+                'Black' = 'BLACK', 'Black Hispanic' = 'BLACK HISPANIC',
+                'Asian / Pacific Islander' = 'ASIAN / PACIFIC ISLANDER',
+                'American Indian/Alaskan Native' = 'AMERICAN INDIAN/ALASKAN NATIVE',
+                'Other' = 'OTHER')
+```
+
+## Shiny APP
+
+```{r}
+ui <- shinyUI(
+    dashboardPage(
+        skin = "red",
+        
+        dashboardHeader(title = "NYC Arrest Shiny App"),
+        
+        dashboardSidebar(
+            sidebarMenu(
+                menuItem("Home", tabName = "Home", icon = icon("home")),
+                menuItem("Map", tabName = "Map", icon = icon("map")),
+                menuItem("TimeSeries", tabName = "TimeSeries", icon = icon("chart-line")),
+                menuItem("PieChart", tabName = "PieChart", icon = icon("chart-pie")),
+                menuItem("Appendix", tabName = "Appendix", icon = icon("info"))
+            )
+        ),
+        
+        dashboardBody(
+            tags$style(type="text/css",
+                       ".shiny-output-error { visibility: hidden; }",
+                       ".shiny-output-error:before { visibility: hidden; }"
+            ),
+            
+          
+        
+  
+            tabItems(
+              
+                tabItem(tabName = "Home", fluidPage(
+                        fluidRow(box(width = 15, title = "Introduction", status = "danger",
+                                     solidHeader = TRUE, h3("NYC Arrest and Public Safefy"),
+                                     h4("By Shuangxian Li,Yayuan Wang,Tomasz Wislicki,Louis Cheng"),
+                                     h5("Utilizing the arrest data provided by NYPD, this application aims to provide insight into the public security and police enforcement activities in New York from January 2011 to June 2022. The application includes one map, a time series plot, and pie charts to further break down the arrest activities into the perpetrators’ gender, age, race, and the location of the arrest event."),
+                                     h5("Users could refer to the 'How to Use The App' section to see more detailed instructions. Please enjoy the application :) "))),
+                        
+                        fluidRow(box(width = 15, title = "Targeted User", status = "danger", solidHeader=TRUE,
+                                     h5("NYC residents and tourists are able to use this app to understand public security and police enforcement activity."))),
+                        
+                        fluidRow(box(width = 15, title = "How to Use The App", status = "danger",
+                                     solidHeader = TRUE,
+                                     h5("The application is divided into 5 separate tabs"),
+                                     tags$div(tags$ul(
+                                       tags$li("The", strong("Home"), "tab: introduction."),
+                                       tags$li("The", strong("Map"), "tab: select year, race, gender, and age group to see the aggregated information on arrest activities; zoom in to check the location of each arrest event."),
+                                       tags$li("The", strong("TimeSeries"), "tab: select year, type, and borough to see how the number of arrest events changes over a year."),
+                                       tags$li("The", strong("PieChart"),"tab: select year, type, and borough to see the gender, race, and age composition of NYC arrest events."),
+                                       tags$li("The", strong("Appendix"),"tab: appendix and data sources.")
+                                       ))
+                                     ))
+                        )), # end of home 
+        
+        
+        
+                tabItem(tabName = "Map",                                                 # Map plot
+                        fluidPage(
+                            fluidRow(
+                                column(6,
+                                       selectInput(inputId = "map_year",
+                                                   label = "Choose a year",
+                                                   selected = 2022,
+                                                   choices = seq(min(PreDataTime$ARREST_YEAR),
+                                                                 max(PreDataTime$ARREST_YEAR))),
+                                       checkboxGroupInput("map_race", 
+                                                          label = "Perpetrator’s race",
+                                                          choices = SelectRace,
+                                                          selected = 'WHITE')
+                                ),
+                                column(6,
+                                       checkboxGroupInput("map_gender", 
+                                                          label = "Perpetrator’s gender",
+                                                          choices = SelectSex, 
+                                                          selected = 'M'),
+                                       checkboxGroupInput("map_age", 
+                                                          label = "Perpetrator’s age group",
+                                                          choices = c('<18','18-24','25-44', '45-64', '65+'),
+                                                          selected = '18-24')
+                                       
+                                ),
+                                column(12,
+                                       leafletOutput("mymap", height = '600px'))
+                            )
+                        )
+                ),      # end of Map
+                
+                tabItem(tabName = "TimeSeries",                                           # Time series
+                        fluidPage(
+                            fluidRow(
+                                column(6,
+                                       pickerInput(inputId = "line_year",
+                                                   label = "Choose a year",
+                                                   selected = 2022,
+                                                   choices = seq(min(PreDataTime$ARREST_YEAR),
+                                                                 max(PreDataTime$ARREST_YEAR)),
+                                                    options = list(
+                                                       `actions-box` = TRUE,
+                                                       size = 5
+                                                   ), 
+                                                   multiple = T)
+                                ),
+                                column(6,
+                                       pickerInput(inputId = "line_type",
+                                                   label ="choose a type",
+                                                   choices = unique(PreDataTime$OFNS_DESC),
+                                                   selected = "BURGLARY",
+                                                   options = list(
+                                                       `actions-box` = TRUE,
+                                                       size = 5
+                                                   ), 
+                                                   multiple = T
+                                       ),
+                                       pickerInput(inputId = "line_borough",
+                                                   label = "choose a borough",
+                                                   choices = SelectBoro,
+                                                   selected = "Q",
+                                                   options = list(
+                                                       `actions-box` = TRUE,
+                                                       size = 5
+                                                   ), 
+                                                   multiple = T
+                                       )
+                                ),
+                                column(12,
+                                       plotlyOutput(outputId = "ggplot",height = "600px"))
+                            )
+                        )
+                ),    # end of Time series
+                
+                
+                tabItem(tabName = "PieChart",                                              # Pie chart
+                        fluidPage(
+                            fluidRow(
+                                column(6,
+                                       selectInput(inputId = "pie_year",
+                                                   label = "Choose a year",
+                                                   selected = 2022,
+                                                   choices = seq(min(PreDataPie$ARREST_YEAR),
+                                                                 max(PreDataPie$ARREST_YEAR)))
+                                ),
+                                column(6,
+                                       pickerInput(inputId = "pie_type",
+                                                   label ="choose a type",
+                                                   choices = unique(PreDataPie$OFNS_DESC),
+                                                   selected = "BURGLARY",
+                                                   options = list(
+                                                       `actions-box` = TRUE,
+                                                       size = 5
+                                                   ), 
+                                                   multiple = T
+                                       ),
+                                       pickerInput(inputId = "pie_borough",
+                                                   label = "choose a borough",
+                                                   choices = SelectBoro,
+                                                   selected = "Q",
+                                                   options = list(
+                                                       `actions-box` = TRUE,
+                                                       size = 5
+                                                   ), 
+                                                   multiple = T
+                                       )
+                                ),
+                            ),
+                            column(12,
+                                   plotlyOutput("plot", height = '600px'))
+                        )
+                ),        # End of Pie chart
+                
+                
+                        tabItem(tabName = "Appendix", fluidPage(                             #Appendix
+            HTML(
+                "<h2> Data Sources </h2>
+                <h4> <p><li>Arrest Data (2022): <a href='https://data.cityofnewyork.us/Public-Safety/NYPD-Arrest-Data-Year-to-Date-/uip8-fykc'>NYPD Arrest Data (Year to Date)</a></li></h4>
+                
+                <h4><li>Arrest Data (2006-2021) : <a href='https://data.cityofnewyork.us/Public-Safety/NYPD-Arrests-Data-Historic-/8h9b-rp9u' target='_blank'>NYPD Arrests Data (Historic)</a></li></h4>"
+            ),
+            
+            titlePanel("Disclaimers "),
+            
+            HTML(
+                " <p>This data is a breakdown of every arrest effected in NYC by the NYPD and is manually extracted every quarter. Therefore, there might exist little errors while documenting and processing the data.</p>",
+                " <p>Moreover, notice that the data contains arrest information instead of the crimes, it only reflects the police enforcement activity in NYC but is unable to comprehensively illustrate the overall public safety and crime situation. Considering the dataset is maintained and updated quarterly, users are unable to obtain up-to-date information from the app. However, this app would still be a great tool to understand regional differences and changes in NYPD arrest activities in the past 10 years. 
+ </p>"),
+            
+            titlePanel("Acknowledgement  "),
+            
+            HTML(
+                " <p>This application is built using R shiny app.</p>",
+                "<p>The following R packages were used in to build this RShiny application:</p>
+                <li>Shiny</li>
+                <li>Dyplr</li>
+                <li>Plotly</li>
+                <li>Leaflet</li>
+                <li>Lubridate</li>"
+            ),
+            
+
+            titlePanel("Contacts"),
+            
+            HTML(
+                " <p>For more information please feel free to contact</p>",
+                " <p>Shuangxian Li(sl4978@columbia.edu) </p>",
+                " <p>Yayuan Wang(yw3548@columbia.edu)</p>",
+                " <p>Tomasz Wislicki(tw2638@columbia.edu) </p>",
+                " <p>Louis Cheng(yc3733@columbia.edu)</p>")
+        )) # end of appendix
+ 
+            )   # end of item
+        ) # end of dashboardBody
+    )  # end of dashboardPage
+)   # end of shinyUI
+
+
+server <- shinyServer(function(input, output, session) {
+    #### Time Series Graph
+  output$ggplot<-renderPlotly({
+    Year <- input$line_year
+    type <- input$line_type
+    borough <- input$line_borough
+    
+    PreDataTime |> 
+        dplyr::filter(ARREST_YEAR %in% Year &
+                          OFNS_DESC %in% type &
+                          ARREST_BORO %in% borough) |> 
+        group_by(ARREST_MONTH, ARREST_YEAR) |> 
+        dplyr::summarise(n = sum(n, na.rm = T),
+                         .groups = 'drop') |> 
+        mutate(ARREST_YEAR = as.character(ARREST_YEAR)) |> 
+        plot_ly(x = ~ARREST_MONTH, 
+                y = ~n,
+                color = ~ARREST_YEAR,
+                type = "scatter",
+                mode = "lines+markers",
+                marker = list(size = 10,
+                              line = list(width = 2))) |> 
+        layout(showlegend = TRUE,
+               xaxis = list(title = list(text = "Month",
+                                         font = list(size = 12,
+                                                     color = 'black')),
+                            dtick = 1,
+                            tick0 = 1),
+               yaxis = list(title = list(text = "Count",
+                                         font = list(size = 12,
+                                                     color = 'black'))),
+               title = list(text = paste('In', Year,
+                                         'the number of', type,
+                                         'happened in', names(which(SelectBoro == borough)),
+                                         sep = ' '),
+                            font = list(size = 14,
+                                        color = 'black')))
+    })
+
+  ######## Pie Chart Page
+  output$plot <- renderPlotly({
+    Year <- input$pie_year
+    type <- input$pie_type
+    borough <- input$pie_borough
+    # browser()
+    
+    DataPlot <- PreDataPie |> 
+        dplyr::filter(ARREST_YEAR == Year &
+                          OFNS_DESC %in% type &
+                          ARREST_BORO %in% borough)
+    DataPlotSex <- DataPlot |> 
+        group_by(PERP_SEX) |> 
+        summarise(n = sum(n, na.rm = T)) |> 
+        rename(group = "PERP_SEX") |> 
+        mutate(group = case_when(group == 'F' ~ 'Female',
+                                 group == 'M' ~ 'Male',
+                                 TRUE ~ 'Other'))
+    DataPlotRace <- DataPlot |> 
+        group_by(PERP_RACE) |> 
+        summarise(n = sum(n, na.rm = T)) |> 
+        rename(group = "PERP_RACE")
+    DataPlotAge <- DataPlot |> 
+        group_by(AGE_GROUP) |> 
+        summarise(n = sum(n, na.rm = T)) |> 
+        rename(group = "AGE_GROUP")
+    
+    plot_ly() |> 
+        add_pie(data = DataPlotSex, labels = ~group, values = ~n,
+                textinfo = 'label+percent',
+                name = "Sex",
+                title = "Sex",                                              #Perpetrator Sex Distribution Chart
+                marker = list(colors=colors,
+                              line = list(color = '#FFFFFF', width = 1)),
+                domain = list(x = c(0, 0.4), y = c(0.4, 1))) |> 
+        add_pie(data = DataPlotRace, labels = ~group, values = ~ n,
+                textinfo = 'label+percent',
+                name = "Race",
+                showlegend = T,
+                title = "Race",                                             #Perpetrator Race Distribution Chart
+                marker = list(#colors=colors,
+                    line = list(color = '#FFFFFF', width = 1)),
+                domain = list(x = c(0.25, 0.75), y = c(0, 0.6))) |> 
+        add_pie(data = DataPlotAge, labels = ~group, values = ~ n,
+                textinfo = 'label+percent',
+                name = "Age",
+                title = "Age",                                                #Perpetrator  Distribution Chart
+                marker = list(#colors=colors,
+                    line = list(color = '#FFFFFF', width = 1)),
+                domain = list(x = c(0.6, 1), y = c(0.4, 1))) %>%
+        layout(title = "Pie Chart Summary of Perpetrator Data", showlegend = F,
+               #grid=list(rows=1, columns=3),
+               xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+               yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+  })
+  
+  ######## Map Page
+  output$mymap <- renderLeaflet({
+      Year <- input$map_year
+      gender <- input$map_gender
+      age <- input$map_age
+      race <- input$map_race
+      df |> 
+          dplyr::filter(ARREST_YEAR == Year &
+                        AGE_GROUP %in% age &
+                        PERP_SEX %in% gender &
+                        PERP_RACE %in% race) |> 
+          leaflet() |> 
+          addTiles() |> 
+          addCircleMarkers(lng = ~Longitude, lat = ~Latitude, clusterOptions = markerClusterOptions())
+  })
+})
+
+shinyApp(ui, server)
+```
+
+
