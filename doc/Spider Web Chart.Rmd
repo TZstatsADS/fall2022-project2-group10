@@ -1,0 +1,94 @@
+
+
+```{r}
+df1 <- read.csv("/Users/tomcio/Desktop/Applied Data Science/Project 2/fall2022-project2-group10-master/data/NYPD_Arrest_Data__Year_to_Date_.csv")
+df2 <- read.csv("/Users/tomcio/Desktop/Applied Data Science/Project 2/fall2022-project2-group10-master/data/NYPD_Arrests_Data__Historic_.csv")
+
+#Initial Preprocessing
+
+df <- df1[,1:18] |> 
+    rbind(df2[,1:18]) |> 
+    select(ARREST_DATE, OFNS_DESC, LAW_CAT_CD, ARREST_BORO, ARREST_PRECINCT, JURISDICTION_CODE,
+           AGE_GROUP, PERP_SEX, PERP_RACE, Latitude, Longitude) |> 
+    dplyr::filter(OFNS_DESC != '(null)') |> 
+    mutate(ARREST_DATE = as.Date(ARREST_DATE, "%m/%d/%Y"),
+           ARREST_YEAR = year(ARREST_DATE))
+
+remove(df1, df2)
+```
+
+
+Offense Radar Chart
+
+
+```{r}
+#from: https://stackoverflow.com/questions/68051085/how-do-i-make-an-interactive-radar-chart-in-r-shiny
+
+#Processing to a frequency tale of chosen offence types by year 
+
+DataFreqOffense <- df %>%
+  group_by(ARREST_YEAR, OFNS_DESC) %>%
+  tally() %>%
+  spread(OFNS_DESC, n, fill = 0) %>% 
+  select(-V1) %>% select(ARREST_YEAR,"BURGLARY", "CRIMINAL TRESPASS","DANGEROUS WEAPONS", "DISORDERLY CONDUCT", "FELONY ASSAULT", "FORGERY", "FRAUDS", "GRAND LARCENY", "INTOXICATED & IMPAIRED DRIVING", "HARASSMENT", "MURDER & NON-NEGL. MANSLAUGHTER", "PETIT LARCENY", "SEX CRIMES")
+
+
+```
+
+
+```{r}
+
+
+
+ui <- navbarPage(title = "Radar Chart",
+
+                 tabPanel(title = "Distribution of Offense Types within Consecutive Years",
+                          sidebarPanel(
+                              selectInput(inputId = "indv",
+                                          label = "Year",
+                                          choices = DataFreqOffense$ARREST_YEAR, 
+                                          selected = 2018)
+                              ),
+                          mainPanel(
+                              plotlyOutput('radar') #the radar plot
+                          )
+                          ))
+
+server <- function(input, output, session) {
+
+    output$radar <- renderPlotly({
+        year <- filter(DataFreqOffense, ARREST_YEAR == input$indv)
+        
+        r <- map_dbl(year[, 2:14], ~.x)
+        nms <- names(r)
+        
+        #code to plot the radar
+        fig <- plot_ly(
+            type = 'scatterpolar',
+            r = r,
+            theta = nms,
+            fill = 'toself',
+            mode = 'markers'
+        ) 
+        fig <- fig %>%
+            layout(
+                polar = list(
+                    radialaxis = list(
+                        visible = T,
+                        range = c(0,max(r))
+                    )
+                ),
+                showlegend = F
+            )
+        
+    })
+}
+
+shinyApp(ui, server)
+
+
+
+
+
+```
+
