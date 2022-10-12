@@ -13,14 +13,15 @@ library(shiny)
 library(shinyWidgets)
 library(shinydashboard)
 library(plotly)
+library(hydroTSM)
+library(tidyverse)
+```
 
+
+```{r, warning=FALSE}
 # read two datasets
-
-# df1 <- read.csv("/Users/lsx/Desktop/new_app/NYPD_Arrest_Data__Year_to_Date_.csv")            # year to date data
-# df2 <- read.csv("/Users/lsx/Desktop/new_app/NYPD_Arrests_Data__Historic_.csv")               # historical data
-
-df1 <- read.csv('/Users/lsx/Desktop/new_app/NYPD_Arrest_Data__Year_to_Date_.csv')
-df2 <- read.csv("/Users/lsx/Desktop/new_app/NYPD_Arrests_Data__Historic_.csv")
+df1 <- read.csv('NYPD_Arrest_Data__Year_to_Date_.csv') # YTD Data
+df2 <- read.csv("NYPD_Arrests_Data__Historic_.csv") # Historical data
 ```
 
 ## Combined Raw Datafile
@@ -35,7 +36,7 @@ df <- df1[,1:18] |>
            ARREST_YEAR = year(ARREST_DATE))
 df$PERP_RACE[df$PERP_RACE == "UNKNOWN"] <- "OTHER"
 
-# remove(df1, df2)
+remove(df1, df2)
 ```
 
 ## Prepare data to summary
@@ -60,6 +61,20 @@ PreDataPie <- df |>
     ungroup() |> 
     dplyr::filter(ARREST_YEAR >= 2011) |> 
     I()
+
+PreDataSeason <- df |> 
+    mutate(ARREST_SEASON = time2season(ARREST_DATE,out.fmt="seasons")) |>
+    group_by(ARREST_YEAR, ARREST_SEASON, OFNS_DESC, ARREST_BORO) |> 
+    count() |> 
+    ungroup() |> 
+    dplyr::filter(ARREST_YEAR >= 2011) |> 
+    I()
+
+DataFreqOffense <- df %>%
+  group_by(ARREST_YEAR, OFNS_DESC) %>%
+  tally() %>%
+  spread(OFNS_DESC, n, fill = 0) %>% 
+  select(-V1) %>% select(ARREST_YEAR,"BURGLARY", "CRIMINAL TRESPASS", "DANGEROUS DRUGS", "DANGEROUS WEAPONS", "DISORDERLY CONDUCT", "FELONY ASSAULT", "FORGERY", "FRAUDS", "GRAND LARCENY", "INTOXICATED & IMPAIRED DRIVING", "HARASSMENT", "MURDER & NON-NEGL. MANSLAUGHTER", "PETIT LARCENY", "SEX CRIMES")
 ```
 
 ## Value used in Shiny App UI
@@ -93,6 +108,7 @@ ui <- shinyUI(
                 menuItem("Map", tabName = "Map", icon = icon("map")),
                 menuItem("TimeSeries", tabName = "TimeSeries", icon = icon("chart-line")),
                 menuItem("PieChart", tabName = "PieChart", icon = icon("chart-pie")),
+                menuItem("RadarChart", tabName = "RadarChart"),
                 menuItem("Appendix", tabName = "Appendix", icon = icon("info"))
             )
         ),
@@ -126,6 +142,7 @@ ui <- shinyUI(
                                        tags$li("The", strong("Map"), "tab: select year, race, gender, and age group to see the aggregated information on arrest activities; zoom in to check the location of each arrest event."),
                                        tags$li("The", strong("TimeSeries"), "tab: select year, type, and borough to see how the number of arrest events changes over a year."),
                                        tags$li("The", strong("PieChart"),"tab: select year, type, and borough to see the gender, race, and age composition of NYC arrest events."),
+                                       tags$li("The", strong("RadarChart"),"tab:."),
                                        tags$li("The", strong("Appendix"),"tab: appendix and data sources.")
                                        ))
                                      ))
@@ -246,6 +263,21 @@ ui <- shinyUI(
                         )
                 ),        # End of Pie chart
                 
+                tabItem(tabName = "RadarChart",                                           # Radar Chart
+                        fluidPage(
+                            fluidRow(
+                                column(6,
+                                       selectInput(inputId = "radar_year",
+                                                   label = "Choose a year",
+                                                   selected = 2018,
+                                                   choices = seq(min(DataFreqOffense$ARREST_YEAR),
+                                                                 max(DataFreqOffense$ARREST_YEAR)))
+                                ),
+                                column(12,
+                                       plotlyOutput(outputId = "radar",height = "600px"))
+                            )
+                        )
+                ),  # End of Radar Chart
                 
                         tabItem(tabName = "Appendix", fluidPage(                             #Appendix
             HTML(
@@ -385,6 +417,34 @@ server <- shinyServer(function(input, output, session) {
                xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
                yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
   })
+  
+  ## Radar Chart
+  
+    output$radar <- renderPlotly({
+        year <- filter(DataFreqOffense, ARREST_YEAR == input$radar_year)
+        
+        r <- map_dbl(year[, 2:15], ~.x)
+        nms <- names(r)
+        
+        #code to plot the radar
+        fig <- plot_ly(
+            type = 'scatterpolar',
+            r = r,
+            theta = nms,
+            fill = 'toself',
+            mode = 'markers'
+        ) 
+        fig <- fig %>%
+            layout(
+                polar = list(
+                    radialaxis = list(
+                        visible = T,
+                        range = c(0,max(r))
+                    )
+                ),
+                showlegend = F
+            )
+    })
   
   ######## Map Page
   output$mymap <- renderLeaflet({
