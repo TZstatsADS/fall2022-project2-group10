@@ -39,7 +39,11 @@ Shuangxian constructed the frame of the application page and designed the time s
 
 Yayuan created and wrote up the Home and Appendix page and designed the map tab. 
 
-Shuangxian and Yayuan helped polish and improve the visualizations for each other. 
+Shuangxian and Yayuan helped polish and improve the visualizations for each other.
+
+Tomasz and Louis designed the radar chart and integrated it in the UI. Both worked together to polish the visualizations and description for Home page.
+
+Louis rearranged and organised the repo, resolving conflicts between files.
 
 + **Data source**: 
 NYC Open Data:  
