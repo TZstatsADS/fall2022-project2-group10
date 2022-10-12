@@ -7,6 +7,7 @@ The data directory contains data used in the analysis. This is treated as read o
 This application utilizes two datasets, but one of them is too large to upload, please refer to the following links: 
 
 https://data.cityofnewyork.us/Public-Safety/NYPD-Arrest-Data-Year-to-Date-/uip8-fykc 
+
 https://data.cityofnewyork.us/Public-Safety/NYPD-Arrests-Data-Historic-/8h9b-rp9u 
 
 
