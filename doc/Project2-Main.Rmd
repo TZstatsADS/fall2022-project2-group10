@@ -45,6 +45,8 @@ PreDataTime: A New Database used in Time Serial plot
 
 PreDataPie: A New Database used in Pie plot
 
+DataFreqOffense: A New Database used in Radar Chart
+
 ```{r}
 PreDataTime <- df |> 
     mutate(ARREST_MONTH = month(ARREST_DATE)) |> 
