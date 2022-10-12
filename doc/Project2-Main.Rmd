@@ -108,7 +108,7 @@ ui <- shinyUI(
                 menuItem("Map", tabName = "Map", icon = icon("map")),
                 menuItem("TimeSeries", tabName = "TimeSeries", icon = icon("chart-line")),
                 menuItem("PieChart", tabName = "PieChart", icon = icon("chart-pie")),
-                menuItem("RadarChart", tabName = "RadarChart"),
+                menuItem("RadarChart", tabName = "RadarChart", icon = icon("chart-simple")),
                 menuItem("Appendix", tabName = "Appendix", icon = icon("info"))
             )
         ),
@@ -142,7 +142,7 @@ ui <- shinyUI(
                                        tags$li("The", strong("Map"), "tab: select year, race, gender, and age group to see the aggregated information on arrest activities; zoom in to check the location of each arrest event."),
                                        tags$li("The", strong("TimeSeries"), "tab: select year, type, and borough to see how the number of arrest events changes over a year."),
                                        tags$li("The", strong("PieChart"),"tab: select year, type, and borough to see the gender, race, and age composition of NYC arrest events."),
-                                       tags$li("The", strong("RadarChart"),"tab:."),
+                                       tags$li("The", strong("RadarChart"),"tab: select year to see the number of NYC arrest events for each type of arrest activities."),
                                        tags$li("The", strong("Appendix"),"tab: appendix and data sources.")
                                        ))
                                      ))
@@ -303,7 +303,9 @@ ui <- shinyUI(
                 <li>Dyplr</li>
                 <li>Plotly</li>
                 <li>Leaflet</li>
-                <li>Lubridate</li>"
+                <li>Lubridate</li>
+                <li>Tidyverse</li>
+                <li>HydroTSM</li>"
             ),
             
 
