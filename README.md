@@ -28,9 +28,10 @@ Our users are government ,policemen,local residents and tourists. Through our ap
 
 + **Contribution statement**: 
 
-Yayuan and Shuangxian chose the dataset and the topic.
+Yayuan and Shuangxian searched for and obtained datasets team used for the project, did data cleansing and preprocessing before analyzing the data
 
-Shuangxian constructed the frame of the application page and designed the time series tab and pie chart tab.
+Shuangxian constructed the frame of the application page and she plotted the TimeSeries of the number of the number of crimes over 12 months for nyc arrest data from 2011 to 2022. The plot can change by specifying the year, crime type, and borough. She also plotted three different pie charts that detail the arrest demographics (sex, race, and age) by year, crime type, and borough.
+
 
 Yayuan created and wrote up the Home and Appendix page and designed the map tab. 
 
