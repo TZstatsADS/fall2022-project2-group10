@@ -2,7 +2,7 @@
 
 ### [Project Description](doc/project2_desc.md)
 
-![screenshot](doc/figs/crime.jpg)
+![screenshot](doc/figs/arrest.png)
 
 
 
