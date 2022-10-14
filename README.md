@@ -16,7 +16,7 @@ Term: Fall 2022
 	+ Wang, Yayuan
 	+ Wislicki, Tomasz
 
-+ shiny link:
++ shiny link: http://127.0.0.1:5278/
 
 + **Project summary**:
 In New York, there are many criminals who are not arrested, which make the citizens and tourists very afraid. Besides, NYC government is committed to keep NYC safe enough for residents and tourists.
