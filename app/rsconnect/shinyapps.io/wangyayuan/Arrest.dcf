@@ -1,0 +1,13 @@
+name: Arrest
+title: Arrest
+username:
+account: wangyayuan
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 7291634
+bundleId: 6404210
+url: https://wangyayuan.shinyapps.io/Arrest/
+when: 1665775838.6467
+lastSyncTime: 1665775838.64673
+asMultiple: FALSE
+asStatic: FALSE
