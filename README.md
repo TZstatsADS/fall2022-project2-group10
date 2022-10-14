@@ -33,9 +33,9 @@ Yayuan and Shuangxian searched for and obtained datasets team used for the proje
 Shuangxian constructed the frame of the application page and she plotted the TimeSeries of  the number of crimes over 12 months for nyc arrest data from 2011 to 2022. The plot can change by specifying the year, crime type, and borough. She also plotted three different pie charts that detail the arrest demographics (sex, race, and age) by year, crime type, and borough.
 
 
-Yayuan created and wrote up the Home and Appendix page which tell us how to use app and some intrudctions. She also designed the map to show the number of crimes over 12 months for nyc arrest data from 2016 to 2022. The plot can change by specifying the year, rice,gender and age. 
+Yayuan created and wrote up the Home and Appendix page which tell us how to use app and some intrudctions. She also designed the map to show the number of crimes over 12 months for nyc arrest data from 2016 to 2022. The plot can change by specifying the year, rice, gender and age. 
 
-Shuangxian and Yayuan helped polish and improve the visualizations for each other.For example, Yayuan proposed for Shuangxian multivariate comparison of timeseries pairs and Shuangxian added a time variable to the map of Yayuan.
+Shuangxian and Yayuan helped polish and improve the visualizations for each other. For example, Yayuan proposed for Shuangxian multivariate comparison of timeseries pairs and Shuangxian added a time variable to the map of Yayuan.
 
 Tomasz and Louis designed the radar chart and integrated it in the UI. Both worked together to polish the visualizations and description for Home page.
 
